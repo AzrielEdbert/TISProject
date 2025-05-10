@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">TISProject</string>
+    <string name="hint_ticket_id">Masukkan ID Tiket (B001)</string>
+    <string name="search">CARI</string>
+    <string name="ticket_not_found">Tiket tidak ditemukan</string>
+</resources>
