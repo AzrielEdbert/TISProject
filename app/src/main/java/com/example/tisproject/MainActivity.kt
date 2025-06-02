@@ -1,9 +1,11 @@
 package com.example.tisproject
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -12,8 +14,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var inputTujuan: EditText
     private lateinit var btnCariTiket: Button
-    private lateinit var hasilTiket: TextView
+    private lateinit var containerHasilTiket: LinearLayout
     private lateinit var progressBar: ProgressBar
+    private lateinit var templateTiket: CardView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,14 +24,10 @@ class MainActivity : AppCompatActivity() {
 
         inputTujuan = findViewById(R.id.inputTujuan)
         btnCariTiket = findViewById(R.id.btnCariTiket)
-        hasilTiket = findViewById(R.id.hasilTiket)
-
+        containerHasilTiket = findViewById(R.id.containerHasilTiket)
         progressBar = ProgressBar(this).apply {
             visibility = View.GONE
         }
-
-        hasilTiket.visibility = View.GONE
-        progressBar.visibility = View.GONE
 
         btnCariTiket.setOnClickListener {
             val tujuan = inputTujuan.text.toString()
@@ -39,7 +38,9 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            hasilTiket.visibility = View.GONE
+            // Bersihkan hasil sebelumnya
+            containerHasilTiket.removeAllViews()
+            containerHasilTiket.visibility = View.GONE
             progressBar.visibility = View.VISIBLE
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -47,25 +48,54 @@ class MainActivity : AppCompatActivity() {
 
                 runOnUiThread {
                     progressBar.visibility = View.GONE
-                    hasilTiket.visibility = View.VISIBLE
 
                     if (tiket.isNotEmpty()) {
-                        val hasil = tiket.joinToString("\n\n") {
-                            """
-                            Bus: ${it.nama_bus}
-                            Dari: ${it.rute_keberangkatan} ke ${it.rute_tujuan}
-                            Waktu: ${it.waktu_berangkat}
-                            Harga: Rp ${it.harga}tt
-                            Fasilitas: ${it.fasilitas}
-                            """.trimIndent()
+                        containerHasilTiket.visibility = View.VISIBLE
+
+                        tiket.forEach { tiketItem ->
+                            tambahCardTiket(
+                                tiketItem.nama_bus,
+                                "Rp ${tiketItem.harga}",
+                                tiketItem.rute_keberangkatan,
+                                tiketItem.rute_tujuan,
+                                tiketItem.waktu_berangkat,
+                                tiketItem.fasilitas
+                            )
                         }
-                        hasilTiket.text = "Tiket ditemukan:\n\n$hasil"
                     } else {
-                        hasilTiket.text = "Tiket tidak ditemukan"
+                        Toast.makeText(this@MainActivity, "Tiket tidak ditemukan", Toast.LENGTH_SHORT).show()
                     }
                 }
-
             }
         }
+    }
+
+    private fun tambahCardTiket(
+        namaBus: String,
+        harga: String,
+        keberangkatan: String,
+        tujuan: String,
+        waktu: String,
+        fasilitas: String
+    ) {
+        // Buat CardView baru berdasarkan template
+        val newCardView = LayoutInflater.from(this).inflate(R.layout.tiket_card_item, containerHasilTiket, false) as CardView
+
+        // Isi data ke view
+        newCardView.findViewById<TextView>(R.id.tvNamaBus).text = namaBus
+        newCardView.findViewById<TextView>(R.id.tvHarga).text = harga
+        newCardView.findViewById<TextView>(R.id.tvKeberangkatan).text = keberangkatan
+        newCardView.findViewById<TextView>(R.id.tvTujuan).text = tujuan
+        newCardView.findViewById<TextView>(R.id.tvWaktu).text = waktu
+        newCardView.findViewById<TextView>(R.id.tvFasilitas).text = "Fasilitas: $fasilitas"
+
+        // Atur onClick untuk tombol pesan
+        newCardView.findViewById<Button>(R.id.btnPesan).setOnClickListener {
+            Toast.makeText(this, "Memesan tiket $namaBus", Toast.LENGTH_SHORT).show()
+            // Tambahkan logika pemesanan di sini
+        }
+
+        // Tambahkan CardView ke container
+        containerHasilTiket.addView(newCardView)
     }
 }
